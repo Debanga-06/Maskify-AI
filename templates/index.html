@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Face Mask & Emotion Detection</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:       #0a0e1a;
+      --surface:  #111827;
+      --border:   #1f2d3d;
+      --accent:   #00e5ff;
+      --green:    #00ff88;
+      --red:      #ff3b3b;
+      --yellow:   #ffd600;
+      --text:     #e2e8f0;
+      --muted:    #64748b;
+      --mono:     'JetBrains Mono', monospace;
+      --sans:     'Space Grotesk', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Header ─────────────────────────────────────────────── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 32px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--green));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .logo h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .logo span {
+      color: var(--accent);
+    }
+
+    .status-badge {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--green);
+      color: var(--green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.5; }
+    }
+
+    /* ── Layout ─────────────────────────────────────────────── */
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 20px;
+      padding: 20px 28px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* ── Video Panel ─────────────────────────────────────────── */
+    .video-panel {
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: #000;
+      position: relative;
+    }
+
+    .video-panel img {
+      width: 100%;
+      display: block;
+    }
+
+    .video-overlay-text {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(0,0,0,0.6);
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--accent);
+    }
+
+    /* ── Sidebar ─────────────────────────────────────────────── */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+    }
+
+    .card-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 14px;
+      font-weight: 600;
+    }
+
+    /* ── Stats ───────────────────────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stat {
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-family: var(--mono);
+      font-size: 1.8rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .stat-value.fps    { color: var(--green); }
+    .stat-value.faces  { color: var(--accent); }
+    .stat-value.masks  { color: var(--yellow); }
+    .stat-value.alert  { color: var(--red); }
+
+    /* ── Mode Buttons ────────────────────────────────────────── */
+    .mode-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .mode-btn {
+      flex: 1;
+      padding: 10px 8px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--muted);
+      cursor: pointer;
+      font-family: var(--sans);
+      font-size: 0.78rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .mode-btn:hover     { border-color: var(--accent); color: var(--accent); }
+    .mode-btn.active    { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+
+    /* ── Action Buttons ──────────────────────────────────────── */
+    .action-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .action-btn {
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      cursor: pointer;
+      font-family: var(--sans);
+      font-size: 0.82rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .action-btn:hover { border-color: var(--accent); transform: translateX(2px); }
+    .action-btn.danger:hover { border-color: var(--red); }
+
+    /* ── Alert Banner ────────────────────────────────────────── */
+    .alert-banner {
+      display: none;
+      padding: 12px 16px;
+      background: rgba(255, 59, 59, 0.15);
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      color: var(--red);
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-align: center;
+      animation: flash 0.8s infinite;
+    }
+
+    @keyframes flash {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+
+    .alert-banner.visible { display: block; }
+
+    /* ── Detection Log ───────────────────────────────────────── */
+    .detection-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .detection-item {
+      background: var(--bg);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-left: 3px solid var(--border);
+      transition: border-color 0.2s;
+    }
+
+    .detection-item.mask    { border-color: var(--green); }
+    .detection-item.no-mask { border-color: var(--red); }
+
+    .detection-item .label { font-weight: 700; }
+    .detection-item .conf  { color: var(--muted); font-size: 0.65rem; }
+
+    /* ── Screenshot Gallery ──────────────────────────────────── */
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      max-height: 140px;
+      overflow-y: auto;
+    }
+
+    .gallery-img {
+      aspect-ratio: 4/3;
+      object-fit: cover;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    /* ── Scrollbar Styling ───────────────────────────────────── */
+    ::-webkit-scrollbar       { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+
+<body>
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🎭</div>
+      <h1>Face <span>Mask</span> &amp; <span>Emotion</span> Detection</h1>
+    </div>
+    <div class="status-badge" id="liveBadge">● LIVE</div>
+  </header>
+
+  <!-- Main Layout -->
+  <div class="container">
+
+    <!-- Video Feed -->
+    <div class="video-panel">
+      <img id="videoFeed" src="/video_feed" alt="Video Feed" />
+      <div class="video-overlay-text" id="modeLabel">MODE: BOTH</div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+
+      <!-- Stats -->
+      <div class="card">
+        <div class="card-title">Live Stats</div>
+        <div class="stats-grid">
+          <div class="stat">
+            <div class="stat-value fps" id="fpsVal">—</div>
+            <div class="stat-label">FPS</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value faces" id="facesVal">0</div>
+            <div class="stat-label">Faces</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value masks" id="masksVal">0</div>
+            <div class="stat-label">With Mask</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value alert" id="noMaskVal">0</div>
+            <div class="stat-label">No Mask ⚠</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- No Mask Alert -->
+      <div class="alert-banner" id="alertBanner">
+        ⚠ NO MASK DETECTED — ALERT ACTIVE
+      </div>
+
+      <!-- Mode Control -->
+      <div class="card">
+        <div class="card-title">Detection Mode</div>
+        <div class="mode-buttons">
+          <button class="mode-btn active" onclick="setMode('both')"   id="btnBoth">Both</button>
+          <button class="mode-btn"        onclick="setMode('mask')"   id="btnMask">Mask</button>
+          <button class="mode-btn"        onclick="setMode('emotion')" id="btnEmotion">Emotion</button>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="card">
+        <div class="card-title">Controls</div>
+        <div class="action-buttons">
+          <button class="action-btn" onclick="togglePause()" id="pauseBtn">
+            ⏸ Pause Stream
+          </button>
+          <button class="action-btn" onclick="takeScreenshot()">
+            📸 Screenshot
+          </button>
+          <button class="action-btn" onclick="loadLogs()">
+            📋 Refresh Logs
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Detections -->
+      <div class="card">
+        <div class="card-title">Live Detections</div>
+        <div class="detection-list" id="detectionList">
+          <div style="color: var(--muted); font-size: 0.75rem; font-family: var(--mono);">
+            Waiting for detections...
+          </div>
+        </div>
+      </div>
+
+    </div> <!-- end sidebar -->
+  </div> <!-- end container -->
+
+  <script>
+    let paused = false;
+
+    // ── Poll Status ──────────────────────────────────────────
+    async function pollStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+
+        document.getElementById('fpsVal').textContent    = data.fps.toFixed(1);
+        document.getElementById('facesVal').textContent  = data.face_count;
+        document.getElementById('noMaskVal').textContent = data.no_mask_count;
+        document.getElementById('modeLabel').textContent = 'MODE: ' + data.mode.toUpperCase();
+
+        const banner = document.getElementById('alertBanner');
+        if (data.no_mask_count > 0) {
+          banner.classList.add('visible');
+        } else {
+          banner.classList.remove('visible');
+        }
+      } catch (e) {
+        document.getElementById('liveBadge').textContent = '● DISCONNECTED';
+      }
+    }
+
+    // ── Poll Detections ──────────────────────────────────────
+    async function pollDetections() {
+      try {
+        const res = await fetch('/api/results');
+        const data = await res.json();
+
+        const list = document.getElementById('detectionList');
+        if (!data.faces || data.faces.length === 0) {
+          list.innerHTML = '<div style="color: var(--muted); font-size: 0.75rem; font-family: var(--mono);">No faces detected</div>';
+          return;
+        }
+
+        let maskCount = data.faces.filter(f => f.mask.has_mask).length;
+        document.getElementById('masksVal').textContent = maskCount;
+
+        list.innerHTML = data.faces.map(f => {
+          const maskClass = f.mask.has_mask ? 'mask' : 'no-mask';
+          const maskLabel = f.mask.label || '—';
+          const emotLabel = f.emotion.label || '—';
+          const conf = f.mask.confidence ? (f.mask.confidence * 100).toFixed(0) + '%' : '';
+          return `
+            <div class="detection-item ${maskClass}">
+              <div>
+                <div class="label">#${f.face_id} ${maskLabel}</div>
+                <div class="conf">${emotLabel} · face ${(f.face_confidence * 100).toFixed(0)}%</div>
+              </div>
+              <div class="conf">${conf}</div>
+            </div>
+          `;
+        }).join('');
+      } catch(e) {}
+    }
+
+    // ── Set Mode ─────────────────────────────────────────────
+    async function setMode(mode) {
+      await fetch('/api/mode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode })
+      });
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('btn' + mode.charAt(0).toUpperCase() + mode.slice(1))
+        .classList.add('active');
+    }
+
+    // ── Toggle Pause ─────────────────────────────────────────
+    async function togglePause() {
+      const res = await fetch('/api/pause', { method: 'POST' });
+      const data = await res.json();
+      paused = data.paused;
+      const btn = document.getElementById('pauseBtn');
+      btn.textContent = paused ? '▶ Resume Stream' : '⏸ Pause Stream';
+    }
+
+    // ── Screenshot ───────────────────────────────────────────
+    async function takeScreenshot() {
+      const res = await fetch('/api/screenshot', { method: 'POST' });
+      const data = await res.json();
+      if (data.path) {
+        alert('Screenshot saved:\n' + data.path);
+      }
+    }
+
+    // ── Load Logs ────────────────────────────────────────────
+    async function loadLogs() {
+      const res = await fetch('/api/logs?n=20');
+      const logs = await res.json();
+      console.table(logs);
+      alert('Last 20 logs loaded to browser console (F12)');
+    }
+
+    // ── Start Polling ────────────────────────────────────────
+    setInterval(pollStatus, 500);
+    setInterval(pollDetections, 1000);
+    pollStatus();
+    pollDetections();
+  </script>
+</body>
+</html>

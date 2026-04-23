@@ -1,0 +1,35 @@
+# ============================================================
+# docker-compose.yml
+# ============================================================
+
+version: "3.9"
+
+services:
+  face-detection:
+    build: .
+    container_name: face_mask_emotion
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./models:/app/models          # Persist trained models
+      - ./logs:/app/logs              # Persist detection logs
+      - ./screenshots:/app/screenshots
+      - ./detected_faces:/app/detected_faces
+    environment:
+      - PYTHONUNBUFFERED=1
+    devices:
+      - /dev/video0:/dev/video0       # Webcam passthrough (Linux)
+    restart: unless-stopped
+
+  # Optional: Streamlit UI on a separate port
+  streamlit:
+    build: .
+    container_name: face_streamlit
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./models:/app/models
+    command: streamlit run streamlit_app.py --server.port 8501 --server.address 0.0.0.0
+    depends_on:
+      - face-detection
+    restart: unless-stopped

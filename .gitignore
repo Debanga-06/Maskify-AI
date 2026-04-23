@@ -1,0 +1,63 @@
+# ============================================================
+# .gitignore — Face Mask & Emotion Detection System
+# ============================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+venv/
+env/
+.env/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+models/*.h5
+models/*.keras
+models/*.pb
+models/*.tflite
+models/*.onnx
+models/*.caffemodel   # face detector weights (~26 MB)
+models/tb_*           # TensorBoard logs
+!models/deploy.prototxt
+dataset/
+logs/
+*.log
+*.csv
+screenshots/
+detected_faces/
+.ipynb_checkpoints/
+*.ipynb
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.env
+.env.local
+.env.production
+*.env
+.dockerignore
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+tmp/
+temp/
+*.tmp
+*.bak
+*.orig
